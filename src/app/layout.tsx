@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { DM_Sans, DM_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { Sidebar } from '@/components/Sidebar'
@@ -7,8 +7,8 @@ import { BottomNav } from '@/components/BottomNav'
 import { Player } from '@/components/Player'
 import { MobileSidebarOverlay } from '@/components/Sidebar/MobileSidebarOverlay'
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
-const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
+const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-geist', weight: ['300','400','500','600','700'] })
+const dmMono = DM_Mono({ subsets: ['latin'], variable: '--font-geist-mono', weight: ['400','500'] })
 
 export const metadata: Metadata = {
   title: 'SoundWave',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${dmSans.variable} ${dmMono.variable}`}>
       <body className="bg-base text-[#ededed] font-sans overflow-hidden h-screen">
         <Providers>
           <div className="flex h-screen w-screen overflow-hidden">
@@ -54,4 +54,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </body>
     </html>
   )
-}
+                }
