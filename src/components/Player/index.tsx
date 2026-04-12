@@ -3,11 +3,13 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Image from 'next/image'
 import {
   Heart, SkipBack, SkipForward, Play, Pause,
-  Volume2, VolumeX, List, Mic2, Shuffle, Repeat,
-  ChevronDown, Music2
+  Volume2, VolumeX, List, Mic2, Shuffle, Repeat, Repeat1,
+  ChevronDown, Music2, Share2
 } from 'lucide-react'
 import { usePlayerStore } from '@/store/playerStore'
 import { LyricsModal } from '@/components/LyricsModal'
+import { QueueModal } from '@/components/QueueModal'
+import { ShareModal } from '@/components/ShareModal'
 import clsx from 'clsx'
 
 declare global {
@@ -20,8 +22,9 @@ declare global {
 export function Player() {
   const {
     currentTrack, isPlaying, volume, progress,
+    isShuffle, repeatMode,
     togglePlay, playNext, playPrev, setVolume, setProgress,
-    toggleFavorite, isFavorite,
+    toggleFavorite, isFavorite, toggleShuffle, cycleRepeat,
   } = usePlayerStore()
 
   const playerRef = useRef<any>(null)
@@ -30,6 +33,8 @@ export function Player() {
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [showLyrics, setShowLyrics] = useState(false)
+  const [showQueue, setShowQueue] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const intervalRef = useRef<any>(null)
 
@@ -109,7 +114,7 @@ export function Player() {
     return () => clearInterval(intervalRef.current)
   }, [isPlaying, ready])
 
-  // Register Media Session action handlers (for lock screen / notification controls)
+  // Register Media Session action handlers
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
     navigator.mediaSession.setActionHandler('play', () => togglePlay())
@@ -143,14 +148,24 @@ export function Player() {
 
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0
 
+  // Repeat icon
+  const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat
+  const repeatActive = repeatMode !== 'off'
+
   return (
     <>
       {/* Hidden YT container */}
       <div ref={containerRef} className="hidden" />
 
-      {/* Lyrics modal */}
+      {/* Modals */}
       {showLyrics && currentTrack && (
         <LyricsModal track={currentTrack} onClose={() => setShowLyrics(false)} />
+      )}
+      {showQueue && (
+        <QueueModal onClose={() => setShowQueue(false)} />
+      )}
+      {showShare && currentTrack && (
+        <ShareModal track={currentTrack} onClose={() => setShowShare(false)} />
       )}
 
       {/* ─── EXPANDED FULL CARD (YouTube Music style) ─── */}
@@ -184,13 +199,22 @@ export function Player() {
             <ChevronDown size={26} />
           </button>
           <p className="text-[12px] font-semibold tracking-[0.15em] uppercase text-white/40">Now Playing</p>
-          <button
-            onClick={() => { setShowLyrics(true); setExpanded(false) }}
-            className="text-white/60 hover:text-white transition-colors p-1"
-            title="Lirik"
-          >
-            <Mic2 size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setShowShare(true); setExpanded(false) }}
+              className="text-white/60 hover:text-white transition-colors p-1"
+              title="Share"
+            >
+              <Share2 size={18} />
+            </button>
+            <button
+              onClick={() => { setShowLyrics(true); setExpanded(false) }}
+              className="text-white/60 hover:text-white transition-colors p-1"
+              title="Lirik"
+            >
+              <Mic2 size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Main content */}
@@ -273,7 +297,13 @@ export function Player() {
 
           {/* Playback controls */}
           <div className="w-full flex items-center justify-between px-2">
-            <button className="text-white/30 hover:text-white/70 transition-colors p-2">
+            <button
+              onClick={toggleShuffle}
+              className={clsx(
+                'transition-colors p-2',
+                isShuffle ? 'text-green' : 'text-white/30 hover:text-white/70'
+              )}
+            >
               <Shuffle size={20} />
             </button>
             <button onClick={playPrev} className="text-white/80 hover:text-white transition-colors p-2">
@@ -290,8 +320,14 @@ export function Player() {
             <button onClick={playNext} className="text-white/80 hover:text-white transition-colors p-2">
               <SkipForward size={32} fill="currentColor" />
             </button>
-            <button className="text-white/30 hover:text-white/70 transition-colors p-2">
-              <Repeat size={20} />
+            <button
+              onClick={cycleRepeat}
+              className={clsx(
+                'transition-colors p-2',
+                repeatActive ? 'text-green' : 'text-white/30 hover:text-white/70'
+              )}
+            >
+              <RepeatIcon size={20} />
             </button>
           </div>
 
@@ -366,7 +402,13 @@ export function Player() {
           {/* Center controls */}
           <div className="flex-1 flex flex-col items-center gap-1.5">
             <div className="flex items-center gap-1 md:gap-2">
-              <button className="hidden sm:flex text-white/30 hover:text-white/70 transition-colors p-1.5">
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleShuffle() }}
+                className={clsx(
+                  'hidden sm:flex transition-colors p-1.5',
+                  isShuffle ? 'text-green' : 'text-white/30 hover:text-white/70'
+                )}
+              >
                 <Shuffle size={14} />
               </button>
               <button onClick={(e) => { e.stopPropagation(); playPrev() }} className="text-white/60 hover:text-white transition-colors p-1.5 relative z-10">
@@ -383,8 +425,14 @@ export function Player() {
               <button onClick={(e) => { e.stopPropagation(); playNext() }} className="text-white/60 hover:text-white transition-colors p-1.5 relative z-10">
                 <SkipForward size={18} />
               </button>
-              <button className="hidden sm:flex text-white/30 hover:text-white/70 transition-colors p-1.5">
-                <Repeat size={14} />
+              <button
+                onClick={(e) => { e.stopPropagation(); cycleRepeat() }}
+                className={clsx(
+                  'hidden sm:flex transition-colors p-1.5',
+                  repeatActive ? 'text-green' : 'text-white/30 hover:text-white/70'
+                )}
+              >
+                <RepeatIcon size={14} />
               </button>
             </div>
             <div className="flex items-center gap-2 w-full max-w-[360px] md:max-w-[480px]">
@@ -409,8 +457,17 @@ export function Player() {
             <button onClick={() => setShowLyrics(true)} className="text-white/30 hover:text-white/70 transition-colors p-1.5" title="Lyrics">
               <Mic2 size={15} />
             </button>
-            <button className="text-white/30 hover:text-white/70 transition-colors p-1.5" title="Queue">
+            <button
+              onClick={() => setShowQueue(true)}
+              className="text-white/30 hover:text-white/70 transition-colors p-1.5" title="Queue"
+            >
               <List size={15} />
+            </button>
+            <button
+              onClick={() => currentTrack && setShowShare(true)}
+              className="text-white/30 hover:text-white/70 transition-colors p-1.5" title="Share"
+            >
+              <Share2 size={15} />
             </button>
             <button onClick={() => setVolume(volume === 0 ? 0.7 : 0)} className="text-white/30 hover:text-white/70 transition-colors p-1.5">
               {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
@@ -423,8 +480,15 @@ export function Player() {
             />
           </div>
 
-          {/* Mobile: lyrics button */}
+          {/* Mobile: action buttons */}
           <div className="flex md:hidden items-center gap-1 relative z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowQueue(true) }}
+              className="text-white/40 hover:text-white/70 transition-colors p-2"
+              title="Queue"
+            >
+              <List size={16} />
+            </button>
             <button
               onClick={(e) => { e.stopPropagation(); setShowLyrics(true) }}
               className="text-white/40 hover:text-white/70 transition-colors p-2"
