@@ -1,15 +1,15 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Heart, TrendingUp, Menu } from 'lucide-react'
+import { Home, Search, Heart, Clock, Menu } from 'lucide-react'
 import { usePlayerStore } from '@/store/playerStore'
 import clsx from 'clsx'
 
 const NAV = [
-  { href: '/',          icon: Home,       label: 'Home' },
-  { href: '/search',    icon: Search,     label: 'Search' },
-  { href: '/favorites', icon: Heart,      label: 'Favs' },
-  { href: '/charts',    icon: TrendingUp, label: 'Charts' },
+  { href: '/',          icon: Home,   label: 'Home' },
+  { href: '/search',    icon: Search, label: 'Search' },
+  { href: '/favorites', icon: Heart,  label: 'Favs' },
+  { href: '/history',   icon: Clock,  label: 'History' },
 ]
 
 export function BottomNav() {
@@ -48,5 +48,5 @@ export function BottomNav() {
       </button>
     </nav>
   )
-        }
-    
+    }
+      
