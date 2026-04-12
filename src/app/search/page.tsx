@@ -1,9 +1,10 @@
 'use client'
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, X } from 'lucide-react'
+import { Search, X, Clock } from 'lucide-react'
 import { Topbar } from '@/components/Topbar'
 import { SongCard } from '@/components/SongCard'
+import { usePlayerStore } from '@/store/playerStore'
 import { Track } from '@/types'
 
 const QUICK_SEARCHES = [
@@ -22,6 +23,17 @@ export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const { searchHistory, addSearchHistory, clearSearchHistory } = usePlayerStore()
+
+  // Handle ?q= param on load (dari history page)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const q = params.get('q')
+    if (q) {
+      setQuery(q)
+      setSubmitted(q)
+    }
+  }, [])
 
   const { data: tracks = [], isLoading } = useQuery({
     queryKey: ['search', submitted],
@@ -34,13 +46,16 @@ export default function SearchPage() {
     if (!clean) return
     setQuery(clean)
     setSubmitted(clean)
-  }, [])
+    addSearchHistory(clean)
+  }, [addSearchHistory])
 
   const clear = () => {
     setQuery('')
     setSubmitted('')
     inputRef.current?.focus()
   }
+
+  const showHistory = !submitted && searchHistory.length > 0
 
   return (
     <div className="min-h-full">
@@ -70,8 +85,56 @@ export default function SearchPage() {
           )}
         </div>
 
+        {/* Search history */}
+        {showHistory && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[12px] font-semibold tracking-[0.08em] uppercase text-white/30">Recent Searches</h2>
+              <button
+                onClick={clearSearchHistory}
+                className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="space-y-0.5">
+              {searchHistory.slice(0, 8).map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSubmit(q)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors text-left group"
+                >
+                  <Clock size={13} className="text-white/25 flex-shrink-0" />
+                  <span className="text-[13.5px] text-white/60 group-hover:text-[#ededed] transition-colors truncate">
+                    {q}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Quick searches */}
-        {!submitted && (
+        {!submitted && !showHistory && (
+          <section>
+            <h2 className="text-[12px] font-semibold tracking-[0.08em] uppercase text-white/30 mb-3">Quick Search</h2>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_SEARCHES.map(q => (
+                <button
+                  key={q}
+                  onClick={() => handleSubmit(q)}
+                  className="px-3.5 py-2 bg-card border border-white/[0.07] rounded-lg text-[13px] text-white/50
+                             hover:border-white/[0.18] hover:text-[#ededed] transition-all"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Quick searches below history */}
+        {!submitted && showHistory && (
           <section>
             <h2 className="text-[12px] font-semibold tracking-[0.08em] uppercase text-white/30 mb-3">Quick Search</h2>
             <div className="flex flex-wrap gap-2">
