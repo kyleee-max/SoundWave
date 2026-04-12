@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'com.soundwave.app',
-  appName: 'SoundWave',
+  appName: 'SoundWave By Kael',
   // Pointing ke Vercel — ganti dengan URL Vercel lo yang asli
   server: {
     url: 'https://sound-wave-drab.vercel.app',
