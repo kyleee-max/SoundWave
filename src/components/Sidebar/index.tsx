@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Library, Heart, TrendingUp, Plus, Music2 } from 'lucide-react'
+import { Home, Search, Library, Heart, TrendingUp, Plus, Music2, Clock, Pencil, Trash2 } from 'lucide-react'
 import { usePlayerStore } from '@/store/playerStore'
 import clsx from 'clsx'
 
@@ -11,13 +11,23 @@ const NAV = [
   { href: '/library',   icon: Library,    label: 'Library' },
   { href: '/favorites', icon: Heart,      label: 'Favorites' },
   { href: '/charts',    icon: TrendingUp, label: 'Charts' },
+  { href: '/history',   icon: Clock,      label: 'History' },
 ]
 
 const GRADIENT_CLASSES = ['gradient-1','gradient-2','gradient-3','gradient-4','gradient-5','gradient-6']
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { playlists, createPlaylist } = usePlayerStore()
+  const { playlists, createPlaylist, renamePlaylist, deletePlaylist } = usePlayerStore()
+
+  function handleRename(id: string, currentName: string) {
+    const name = prompt('Nama baru:', currentName)
+    if (name?.trim() && name.trim() !== currentName) renamePlaylist(id, name.trim())
+  }
+
+  function handleDelete(id: string, name: string) {
+    if (confirm(`Hapus playlist "${name}"?`)) deletePlaylist(id)
+  }
 
   return (
     <aside className="w-[240px] bg-surface border-r border-white/[0.06] flex flex-col h-full overflow-hidden">
@@ -55,7 +65,7 @@ export function Sidebar() {
           <p className="text-[10px] font-semibold tracking-[0.08em] text-white/30 uppercase">Playlists</p>
           <button
             onClick={() => {
-              const name = prompt('Playlist name:')
+              const name = prompt('Nama playlist:')
               if (name?.trim()) createPlaylist(name.trim())
             }}
             className="text-white/30 hover:text-white/60 transition-colors"
@@ -65,19 +75,35 @@ export function Sidebar() {
         </div>
 
         {playlists.map((pl, i) => (
-          <Link
-            key={pl.id}
-            href={`/playlist/${pl.id}`}
-            className="flex items-center gap-2.5 px-3 py-[6px] rounded-lg hover:bg-white/[0.05] transition-all group"
-          >
-            <div className={clsx('w-8 h-8 rounded-[4px] flex-shrink-0', GRADIENT_CLASSES[i % GRADIENT_CLASSES.length])} />
-            <div className="min-w-0">
-              <p className="text-[13px] font-[450] text-white/50 group-hover:text-[#ededed] transition-colors truncate">{pl.name}</p>
-              <p className="text-[11px] text-white/25 mt-0.5">{pl.tracks.length} songs</p>
+          <div key={pl.id} className="group flex items-center gap-2.5 px-3 py-[6px] rounded-lg hover:bg-white/[0.05] transition-all">
+            <Link href={`/playlist/${pl.id}`} className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className={clsx('w-8 h-8 rounded-[4px] flex-shrink-0', GRADIENT_CLASSES[i % GRADIENT_CLASSES.length])} />
+              <div className="min-w-0">
+                <p className="text-[13px] font-[450] text-white/50 group-hover:text-[#ededed] transition-colors truncate">{pl.name}</p>
+                <p className="text-[11px] text-white/25 mt-0.5">{pl.tracks.length} songs</p>
+              </div>
+            </Link>
+            {/* Inline actions on hover */}
+            <div className="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
+              <button
+                onClick={() => handleRename(pl.id, pl.name)}
+                className="p-1 text-white/30 hover:text-white transition-colors"
+                title="Rename"
+              >
+                <Pencil size={11} />
+              </button>
+              <button
+                onClick={() => handleDelete(pl.id, pl.name)}
+                className="p-1 text-white/30 hover:text-red-400 transition-colors"
+                title="Delete"
+              >
+                <Trash2 size={11} />
+              </button>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </aside>
   )
-  }
+}
+  
