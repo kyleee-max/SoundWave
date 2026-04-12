@@ -1,0 +1,70 @@
+package com.soundwave.app;
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Intent;
+import android.os.Build;
+import android.os.IBinder;
+import androidx.core.app.NotificationCompat;
+
+public class AudioService extends Service {
+    private static final String CHANNEL_ID = "soundwave_audio";
+    private static final int NOTIF_ID = 1;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        createNotificationChannel();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        String title = "SoundWave";
+        String artist = "";
+        if (intent != null) {
+            title = intent.getStringExtra("title") != null ? intent.getStringExtra("title") : "SoundWave";
+            artist = intent.getStringExtra("artist") != null ? intent.getStringExtra("artist") : "";
+        }
+
+        Intent notifIntent = new Intent(this, MainActivity.class);
+        notifIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+            this, 0, notifIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(artist)
+            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setSilent(true)
+            .build();
+
+        startForeground(NOTIF_ID, notification);
+        return START_STICKY;
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID,
+                "SoundWave Playback",
+                NotificationManager.IMPORTANCE_LOW
+            );
+            channel.setDescription("Keeps music playing in background");
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(channel);
+        }
+    }
+              }
+  
