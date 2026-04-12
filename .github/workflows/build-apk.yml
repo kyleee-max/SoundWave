@@ -39,22 +39,23 @@ jobs:
       - name: Create assets directory
         run: mkdir -p android/app/src/main/assets
 
-      - name: Fix Kotlin version conflict
-        run: |
-          # Force semua kotlin stdlib ke versi yang sama di root build.gradle
-          cat >> android/build.gradle << 'GRADLE'
-
-          configurations.all {
-            resolutionStrategy {
-              force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
-              force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
-              force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
-            }
-          }
-          GRADLE
-
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Fix Kotlin duplicate class conflict
+        run: |
+          # Inject resolutionStrategy ke app/build.gradle setelah dependencies block
+          cat >> android/app/build.gradle << 'GRADLE'
+
+          configurations.all {
+              resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                  if (details.requested.group == 'org.jetbrains.kotlin') {
+                      details.useVersion '1.8.22'
+                      details.because 'Force consistent Kotlin version'
+                  }
+              }
+          }
+          GRADLE
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
