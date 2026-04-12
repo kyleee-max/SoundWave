@@ -1,0 +1,75 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Create assets directory
+        run: mkdir -p android/app/src/main/assets
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Fix Kotlin duplicate class conflict
+        run: |
+          printf '\nconfigurations.all {\n    resolutionStrategy.eachDependency { DependencyResolveDetails details ->\n        if (details.requested.group == "org.jetbrains.kotlin") {\n            details.useVersion "1.8.22"\n            details.because "Force consistent Kotlin version"\n        }\n    }\n}\n' >> android/app/build.gradle
+
+      - name: Copy Java patches
+        run: |
+          PKG_DIR=$(find android/app/src/main/java/com/soundwave/app -type d | head -1)
+          echo "Copying to: $PKG_DIR"
+          cp .github/android-patches/AudioService.java "$PKG_DIR/AudioService.java"
+          cp .github/android-patches/MainActivity.java "$PKG_DIR/MainActivity.java"
+
+      - name: Patch AndroidManifest
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i 's|</manifest>|    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>|' "$MANIFEST"
+          sed -i 's|<application|<application android:allowAudioPlaybackCapture="true"|' "$MANIFEST"
+          sed -i 's|</application>|        <service android:name=".AudioService" android:foregroundServiceType="mediaPlayback" android:exported="false" />\n    </application>|' "$MANIFEST"
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: soundwave-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          
