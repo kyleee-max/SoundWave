@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'SoundWave',
   // Pointing ke Vercel — ganti dengan URL Vercel lo yang asli
   server: {
-    url: 'https://sound-wave.vercel.app',
+    url: 'https://sound-wave-drab.vercel.app',
     cleartext: false,
   },
   android: {
