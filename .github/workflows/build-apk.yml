@@ -75,7 +75,7 @@ jobs:
               }
 
               @Override
-              protected void onResume() {
+              public void onResume() {
                   super.onResume();
                   WebView webView = getBridge().getWebView();
                   WebSettings settings = webView.getSettings();
